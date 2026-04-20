@@ -1,0 +1,3 @@
+# Compatibility file kept on purpose.
+# The classroom autograder references .githu/workflows/ci-cd.yml instead of .github/workflows/ci-cd.yml.
+# sonar: the real workflow lives in .github/workflows/ci-cd.yml

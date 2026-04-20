@@ -56,10 +56,11 @@ resource "azurerm_linux_web_app" "webapp" {
   resource_group_name   = azurerm_resource_group.rg.name
   service_plan_id       = azurerm_service_plan.appserviceplan.id
   depends_on            = [azurerm_service_plan.appserviceplan]
-  //https_only            = true
+  https_only            = true
   site_config {
     minimum_tls_version = "1.2"
     always_on = false
+    ftps_state = "FtpsOnly"
     application_stack {
       docker_image_name = "patrickcuadros/shorten:latest"
       docker_registry_url = "https://index.docker.io"      
@@ -74,13 +75,33 @@ resource "azurerm_mssql_server" "sqlsrv" {
   version                      = "12.0"
   administrator_login          = var.sqladmin_username
   administrator_login_password = var.sqladmin_password
+  minimum_tls_version          = "1.2"
+  #tfsec:ignore:azure-database-no-public-access:Lab setup requires SQL connectivity without private networking.
+  public_network_access_enabled = true
 }
 
 resource "azurerm_mssql_firewall_rule" "sqlaccessrule" {
   name             = "PublicAccess"
   server_id        = azurerm_mssql_server.sqlsrv.id
   start_ip_address = "0.0.0.0"
-  end_ip_address   = "255.255.255.255"
+  end_ip_address   = "0.0.0.0"
+}
+
+resource "azurerm_storage_account" "sqlaudit" {
+  name                            = "uptaudit${random_integer.ri.result}"
+  resource_group_name             = azurerm_resource_group.rg.name
+  location                        = azurerm_resource_group.rg.location
+  account_tier                    = "Standard"
+  account_replication_type        = "LRS"
+  min_tls_version                 = "TLS1_2"
+  allow_nested_items_to_be_public = false
+}
+
+resource "azurerm_mssql_server_extended_auditing_policy" "sqlsrv_audit" {
+  server_id                  = azurerm_mssql_server.sqlsrv.id
+  storage_endpoint           = azurerm_storage_account.sqlaudit.primary_blob_endpoint
+  storage_account_access_key = azurerm_storage_account.sqlaudit.primary_access_key
+  retention_in_days          = 90
 }
 
 resource "azurerm_mssql_database" "sqldb" {

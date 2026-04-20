@@ -35,3 +35,15 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# .NET build output
+**/bin/
+**/obj/
+
+# IDE and local tooling
+.vs/
+*.user
+*.suo
+
+# OS-generated files
+.DS_Store
