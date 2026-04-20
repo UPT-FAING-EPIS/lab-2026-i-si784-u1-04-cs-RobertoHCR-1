@@ -13,6 +13,12 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    - name: Setup tfsec
+      run: |
+        curl -L -o /tmp/tfsec_1.28.13_linux_amd64.tar.gz "https://github.com/aquasecurity/tfsec/releases/download/v1.28.13/tfsec_1.28.13_linux_amd64.tar.gz"
+        tar -xzf /tmp/tfsec_1.28.13_linux_amd64.tar.gz -C /tmp
+        sudo mv /tmp/tfsec /usr/local/bin/tfsec
+        sudo chmod +x /usr/local/bin/tfsec
     - name: t1
       id: t1
       uses: classroom-resources/autograding-command-grader@v1
