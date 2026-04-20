@@ -2,6 +2,7 @@ name: Construcción y despliegue de una aplicación MVC a Azure
 
 env:
   AZURE_WEBAPP_NAME: upt-awa-691
+  AZURE_RESOURCE_GROUP: upt-arg-691
   DOTNET_VERSION: '8'
 
 on:
@@ -51,13 +52,23 @@ jobs:
     needs: build
     environment:
       name: Development
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+      url: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net
 
     steps:
-      - name: Desplegar a Azure Web App
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          images: ${{ needs.build.outputs.image-ref }}
+      - name: Login azure
+        run: |
+          az login -u "${{ secrets.AZURE_USERNAME }}" -p "${{ secrets.AZURE_PASSWORD }}"
+
+      - name: Configurar imagen del contenedor
+        run: |
+          az webapp config container set \
+            --name "${{ env.AZURE_WEBAPP_NAME }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --docker-custom-image-name "${{ needs.build.outputs.image-ref }}" \
+            --docker-registry-server-url "https://ghcr.io"
+
+      - name: Reiniciar Azure Web App
+        run: |
+          az webapp restart \
+            --name "${{ env.AZURE_WEBAPP_NAME }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}"
